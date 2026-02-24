@@ -97,10 +97,13 @@ export class SnowState<
   protected stateTransitions = new Map<StateNames, Map<TransitionNames, TransitionRecord<StateNames>[]>>();
   protected wildcardTransitions = new Map<TransitionNames, TransitionRecord<StateNames>[]>();
   protected eventCallbacks: Record<string, Set<StateMethod>> = {};
+  protected runEnterOnInitialState: boolean;
+  protected initialEnterHandled: boolean = false;
 
-  constructor(initialState: string) {
+  constructor(initialState: string, runEnterOnInitialState: boolean = false) {
     this.state = initialState as unknown as StateNames;
     this.stateStartTime = Date.now();
+    this.runEnterOnInitialState = runEnterOnInitialState;
   }
 
   // *** State registration ***
@@ -159,6 +162,17 @@ export class SnowState<
         this.addMethodToStateMachine(eventName);
       }
     });
+
+    // If this is the initial state and we should run enter on it, do so now
+    if (
+      !this.initialEnterHandled &&
+      this.runEnterOnInitialState &&
+      stateName === (this.state as string) &&
+      stateObject.enter
+    ) {
+      stateObject.enter();
+      this.initialEnterHandled = true;
+    }
 
     // Use type assertion to bypass complex type inference
     return this as SnowStateWithTypes<StateNames | NewState, CustomEvents & StateEvents, TransitionNames>;
@@ -536,9 +550,10 @@ export type SnowStateWithTypes<
 };
 
 export function createSnowState<StateNames extends string = never, TransitionNames extends string = never>(
-  initialState: string
+  initialState: string,
+  runEnterOnInitialState: boolean = false
 ): SnowStateWithTypes<StateNames, {}, TransitionNames> {
-  return new SnowState<StateNames, {}, TransitionNames>(initialState) as SnowStateWithTypes<
+  return new SnowState<StateNames, {}, TransitionNames>(initialState, runEnterOnInitialState) as SnowStateWithTypes<
     StateNames,
     {},
     TransitionNames

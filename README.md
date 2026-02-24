@@ -11,7 +11,7 @@ npm install @sohomsahaun/snowstate
 ## Basic Usage
 
 ```typescript
-import { createSnowState } from 'snowstate';
+import { createSnowState } from '@sohomsahaun/snowstate';
 
 // Create a state machine with "idle" as the initial state
 const fsm = createSnowState("idle")
@@ -47,19 +47,31 @@ const fsm = createSnowState("idle")
 
 ### Creating a State Machine
 
-#### `createSnowState(initialState)`
+#### `createSnowState(initialState, runEnterOnInitialState?)`
 
 Creates a new state machine with the specified initial state.
 
 | Argument | Type | Description |
 | --- | --- | --- |
 | initialState | string | Initial state for the state machine |
+| runEnterOnInitialState? | boolean | Whether to run the `enter` method of the initial state when it is first registered (default: `false`) |
 
 **Returns:** SnowState instance
 
 **Example:**
 ```typescript
 const fsm = createSnowState("idle");
+```
+
+By default, the `enter` method of the initial state is not called when the state machine is created, because you are already in that state. If you need the `enter` method to run for the initial state, set `runEnterOnInitialState` to `true`:
+
+```typescript
+const fsm = createSnowState("idle", true)
+  .add("idle", {
+    enter: () => {
+      console.log("Entered idle state"); // This will run immediately
+    }
+  });
 ```
 
 ### Managing States
@@ -114,7 +126,7 @@ fsm.change("attack", undefined, () => {
 });
 ```
 
-#### `.stateIs(stateName, stateToCheck?)`
+#### `.stateIs(stateName)`
 
 Returns `true` if the current state matches the given state name.
 
@@ -226,7 +238,7 @@ Executes a callback when a certain event occurs. (Listed below)
 
 **Example:**
 ```typescript
-fsm.on("state changed", (destState: string, sourceState: string) => {
+fsm.on("stateChanged", (destState: string, sourceState: string) => {
   console.log("State has changed from " + sourceState + " to " + destState);
 });
 ```
@@ -246,18 +258,18 @@ Built-in events:
 </thead>
 <tbody>
   <tr>
-    <td rowspan="3">state changed</td>
-    <td>dest_state</td>
+    <td rowspan="3">stateChanged</td>
+    <td>destState</td>
     <td>String</td>
     <td>State it has switched to</td>
   </tr>
   <tr>
-    <td>source_state</td>
+    <td>sourceState</td>
     <td>String</td>
     <td>State it has switched from</td>
   </tr>
   <tr>
-    <td>transition_name</td>
+    <td>transitionName</td>
     <td>String</td>
     <td>The transition which was triggered for the state change (<code>undefined</code> if not applicable)</td>
   </tr>
@@ -296,7 +308,7 @@ Checks if an event exists for the current state.
 
 **Example:**
 ```typescript
-import { SNOWSTATE_DEFINEDNESS } from 'snowstate';
+import { SNOWSTATE_DEFINEDNESS } from '@sohomsahaun/snowstate';
 
 if (fsm.eventExists("update") !== SNOWSTATE_DEFINEDNESS.NOT_DEFINED) {
   // The update event is defined for the current state
@@ -410,7 +422,7 @@ Checks if a transition exists from a state.
 
 **Example:**
 ```typescript
-import { SNOWSTATE_DEFINEDNESS } from 'snowstate';
+import { SNOWSTATE_DEFINEDNESS } from '@sohomsahaun/snowstate';
 
 if (fsm.transitionExists("reset", "idle") !== SNOWSTATE_DEFINEDNESS.NOT_DEFINED) {
   fsm.trigger("reset");
@@ -514,7 +526,7 @@ chain together the .add and .addTransition methods. The resulting fsm will be ab
 the types of event names and state names.
 
 ```typescript
-import { createSnowState } from 'snowstate';
+import { createSnowState } from '@sohomsahaun/snowstate';
 
 // Create a fully typed state machine
 const player = createSnowState("idle")
@@ -522,12 +534,12 @@ const player = createSnowState("idle")
     enter: () => console.log("Entering idle state"),
     update: () => { },
     draw: () => { }
-  });
+  })
   .add("walk", {
     enter: () => console.log("Entering walk state"),
     update: () => { },
     draw: () => { }
-  });
+  })
   .addTransition("t_walk", "idle", "walk");
 
 // Type error if you use an invalid state
@@ -536,7 +548,7 @@ player.change("running"); // Error! "running" wasn't previously added as a state
 
 player.update(); // OK
 player.draw(); // OK
-player.step(); // Error! "step" wasn't previously aded as an event
+player.step(); // Error! "step" wasn't previously added as an event
 
 player.trigger("t_walk"); // OK
 player.trigger("t_run"); // Error! "t_run" wasn't previously added as a transition name
