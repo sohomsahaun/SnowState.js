@@ -15,7 +15,7 @@ export enum SNOWSTATE_DEFINEDNESS {
 export const SONWSTATE_WILDCARD_TRANSITION_NAME = "*";
 export const SNOWSTATE_REFLEXIVE_TRANSITION_NAME = "=";
 
-type StateMethod = (...args: any[]) => any;
+type StateMethod = ((...args: any[]) => any) | ((...args: any[]) => Promise<any>);
 type LeaveEnterMethod = (data?: any) => void;
 
 interface StateObjectBuiltin {
@@ -124,7 +124,7 @@ export class SnowState<
     }
 
     this.addedEvents.add(eventName);
-    (this as any)[eventName] = (...args: any[]) => {
+    (this as any)[eventName] = async (...args: any[]) => {
       const currentState = this.stateObjects[this.state];
       const stateMethod = currentState[eventName as keyof typeof currentState];
 
@@ -201,7 +201,7 @@ export class SnowState<
       leaveFunc(data);
     } else {
       // Otherwise use the default leave method
-      currentStateObject.leave?.();
+      currentStateObject.leave?.(data);
     }
 
     // Update previous state
@@ -225,7 +225,7 @@ export class SnowState<
     if (enterFunc) {
       enterFunc(data);
     } else {
-      newStateObject.enter?.();
+      newStateObject.enter?.(data);
     }
 
     // Emit state_changed event
@@ -308,7 +308,7 @@ export class SnowState<
     if (currentState.enter) {
       currentState.enter(data);
     } else {
-      this.defaultEventMethods.enter?.();
+      this.defaultEventMethods.enter?.(data);
     }
     return this;
   }
@@ -318,7 +318,7 @@ export class SnowState<
     if (currentState.leave) {
       currentState.leave(data);
     } else {
-      this.defaultEventMethods.leave?.();
+      this.defaultEventMethods.leave?.(data);
     }
     return this;
   }
